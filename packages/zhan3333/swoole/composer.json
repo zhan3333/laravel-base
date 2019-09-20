@@ -1,0 +1,20 @@
+{
+    "name": "zhan3333/swoole",
+    "authors": [
+        {
+            "name": "zhan",
+            "email": "grianchan@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Zhan3333\\Swoole\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Zhan3333\\Swoole\\Test": "tests/"
+        }
+    }
+}

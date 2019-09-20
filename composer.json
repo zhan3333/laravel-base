@@ -38,7 +38,8 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "app/"
+            "App\\": "app/",
+            "Zhan3333\\Swoole\\": "packages/zhan3333/swoole/src/"
         },
         "classmap": [
             "database/seeds",
