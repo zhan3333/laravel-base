@@ -117,6 +117,8 @@ class Swoole
         if (!is_array($data)) {
             $data = [$data];
         }
-        \Log::channel('swoole')->info("{$this->config['name']}: $message", $data);
+        if ($this->config['log_enable']) {
+            app(SwooleLogger::class)->info("{$this->config['name']}: $message", $data);
+        }
     }
 }

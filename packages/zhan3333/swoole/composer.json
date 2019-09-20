@@ -16,5 +16,15 @@
         "psr-4": {
             "Zhan3333\\Swoole\\Test": "tests/"
         }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Zhan3333\\Swoole\\SwooleServiceProvider"
+            ],
+            "aliases": {
+                "Debugbar": "Zhan3333\\Swoole\\Facades\\SwooleLog"
+            }
+        }
     }
 }

@@ -175,6 +175,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
+        \Zhan3333\Swoole\Providers\SwooleServiceProvider::class,
     ],
 
     /*

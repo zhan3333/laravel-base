@@ -4,6 +4,7 @@ namespace Zhan3333\Swoole\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Zhan3333\Swoole\Commands\RunSwoole;
+use Zhan3333\Swoole\SwooleLogger;
 use Zhan3333\Swoole\SwooleManager;
 
 class SwooleServiceProvider extends ServiceProvider
@@ -33,6 +34,13 @@ class SwooleServiceProvider extends ServiceProvider
             }
             $config = config("swoole.services.{$driver}");
             return new SwooleManager($config);
+        });
+        $this->app->singleton(SwooleLogger::class, function ($app) {
+            $driver = config('swoole.use_server');
+            if (config("swoole.services.{$driver}.log_enable", false)) {
+                return new SwooleLogger($app['log']->channel(config("swoole.services.{$driver}.log_channel")));
+            }
+            return new SwooleLogger();
         });
     }
 }

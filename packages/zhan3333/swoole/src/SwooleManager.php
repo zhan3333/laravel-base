@@ -67,4 +67,23 @@ class SwooleManager
         $swoole = new $this->config['handle_class']($this->config);
         $swoole->start();
     }
+
+    public function checkConfig()
+    {
+        if (empty($this->config)) {
+            return 'Config is empty';
+        }
+        if (empty($this->config['host'])) {
+            return 'Config host is empty';
+        }
+        if (empty($this->config['port'])) {
+            return 'Config host is empty';
+        }
+        if (($logFile = $this->config['log_file']) && !is_writable($logFile)) {
+            return "Config $logFile not writable";
+        }
+        if (($pidFile = $this->config['pid_file']) && !is_writable($pidFile)) {
+            return "Config $pidFile not writable";
+        }
+    }
 }

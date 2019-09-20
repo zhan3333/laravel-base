@@ -82,7 +82,11 @@ class SwooleCommand extends Command
         $port = $this->config['port'];
         $this->info("Start $this->swooleName $host:$port ...");
         if (!$this->manager->isRun()) {
-            $this->manager->start();
+            if ($error = $this->manager->checkConfig()) {
+                $this->manager->start();
+            } else {
+                $this->error("$this->swooleName can't start: $error");
+            }
             // 被阻塞，后面在进程结束钱是不会执行的
         } else {
             $this->error("$this->swooleName already run.");
@@ -95,7 +99,11 @@ class SwooleCommand extends Command
         $this->info("Reload $name ...");
         if (!$this->manager->isRun()) {
             $this->warn("$name not run.");
-            $this->manager->start();
+            if ($error = $this->manager->checkConfig()) {
+                $this->manager->start();
+            } else {
+                $this->error("$this->swooleName can't start: $error");
+            }
         } else {
             $this->manager->reload();
             $this->info("Reload $name success");
