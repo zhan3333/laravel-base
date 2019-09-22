@@ -17,3 +17,5 @@ fast create laravel app
 - Messenger: `cmgmyr/messenger`
 - View laravel logs: `arcanedev/log-viewer`
 - Generate api doc: `mpociot/laravel-apidoc-generator`
+- Database data to seed: `orangehill/iseed`
+- World data: `rinvex/country`
