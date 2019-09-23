@@ -82,8 +82,24 @@ class SwooleManager
         if (($logFile = $this->config['log_file']) && !is_writable($logFile)) {
             return "Config $logFile not writable";
         }
-        if (($pidFile = $this->config['pid_file']) && !is_writable($pidFile)) {
+        $pidFile = $this->config['pid_file'];
+        $this->createPidFile($pidFile);
+        if ($pidFile && !is_writable($pidFile)) {
             return "Config $pidFile not writable";
         }
+    }
+
+    public function createPidFile($pidPath)
+    {
+        $dir = $concurrentDirectory = substr($pidPath, 0, strrpos($pidPath, '/'));
+        if (!is_dir($dir)) {
+            if (!mkdir($dir) && !is_dir($dir)) {
+                throw new \RuntimeException(sprintf('Pid directory "%s" was not created', $concurrentDirectory));
+            }
+        }
+        if (!is_file($pidPath)) {
+            @touch($pidPath);
+        }
+
     }
 }
