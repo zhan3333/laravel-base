@@ -3,6 +3,7 @@
 namespace Zhan3333\Swoole\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Zhan3333\Swoole\Commands\HttpSwooleCommand;
 use Zhan3333\Swoole\Commands\RunSwoole;
 use Zhan3333\Swoole\SwooleLogger;
 use Zhan3333\Swoole\SwooleManager;
@@ -14,6 +15,7 @@ class SwooleServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 RunSwoole::class,
+                HttpSwooleCommand::class,
             ]);
         }
         $this->publishes([

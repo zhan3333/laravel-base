@@ -4,8 +4,18 @@
 namespace Zhan3333\Swoole;
 
 
+use Exception;
+use Illuminate\Foundation\Application;
+use Illuminate\Routing\Pipeline;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
 use Swoole\Server;
+use Symfony\Component\Debug\Exception\FatalThrowableError;
+use Throwable;
 use Zhan3333\Swoole\Exceptions\JobRuntimeException;
+use Zhan3333\Swoole\Http\Kernel;
+use Zhan3333\Swoole\Http\TransformRequest;
+use Zhan3333\Swoole\Http\TransformResponse;
 use Zhan3333\Swoole\Job\Inject;
 
 class Swoole
@@ -17,12 +27,12 @@ class Swoole
     /**
      * @var Server
      */
-    private $server;
+    public $server;
 
     public function __construct($config)
     {
         $this->config = $config;
-        $server = new Server($this->config['host'], $this->config['port']);
+        $server = new \Swoole\Http\Server($this->config['host'], $this->config['port']);
         $server->set($this->config);
         $server->on('Start', [$this, 'onStart']);
         $server->on('WorkerStart', [$this, 'onWorkerStart']);
@@ -31,6 +41,8 @@ class Swoole
         $server->on('Receive', [$this, 'onReceive']);
         $server->on('Close', [$this, 'onClose']);
         $server->on('Task', [$this, 'onTask']);
+        $server->on('Finish', [$this, 'onFinish']);
+        $server->on('Request', [$this, 'onRequest']);
         $server->on('Finish', [$this, 'onFinish']);
         $this->server = $server;
     }
@@ -110,6 +122,29 @@ class Swoole
     public function onFinish(Server $serv, $task_id, $data)
     {
         $this->log("Task $serv->worker_id-$task_id finish", $data);
+    }
+
+    public function onRequest(Request $request, Response $response)
+    {
+        $transformRequest = TransformRequest::handle($request);
+        /** @var Kernel $kernel */
+        $kernel = app(\Illuminate\Contracts\Http\Kernel::class);
+        /** @var Application $app */
+        $app = app();
+        try {
+            $transformResponse = (new Pipeline($app))
+                ->send($transformRequest)
+                ->through($app->shouldSkipMiddleware() ? [] : $kernel->getMiddleware())
+                ->then($kernel->dispatchToRouter());
+        } catch (Exception $e) {
+            app(\App\Exceptions\Handler::class)->report($e);
+            $transformResponse = app(\App\Exceptions\Handler::class)->render($transformRequest, $e);
+        } catch (Throwable $e) {
+            app(\App\Exceptions\Handler::class)->report($e = new FatalThrowableError($e));
+            $transformResponse = app(\App\Exceptions\Handler::class)->render($transformRequest, $e);
+        }
+        TransformResponse::handle($transformResponse, $response);
+        $response->end($transformResponse->content());
     }
 
     private function log($message, $data = [])

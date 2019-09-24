@@ -8,6 +8,7 @@ use Swoole\Client;
 use Tests\Jobs\PrintJob;
 use Tests\Jobs\PrintJobException;
 use Tests\Jobs\PrintJobNow;
+use Tests\Jobs\ReloadCommandTestJob;
 use Tests\TestCase;
 
 class SwooleTest extends TestCase
@@ -48,5 +49,15 @@ class SwooleTest extends TestCase
     {
         $jobId = PrintJobNow::dispatchNow('test message')->jobId;
         $this->assertInternalType('string', $jobId);
+    }
+
+    /**
+     * 测试重载功能
+     * @test
+     */
+    public function reload()
+    {
+        app(ReloadCommandTestJob::class)::dispatch();
+//        ReloadCommandTestJob::dispatch();
     }
 }

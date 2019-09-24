@@ -5,6 +5,7 @@ Manager Swoole Server
 ## Command
 
 `php artisan swoole {action}`: start|stop|reload|status|pid
+`php artisan http-swoole start`: start http server
 
 ## Setting
 

@@ -53,26 +53,11 @@ class SwooleCommand extends Command
      */
     public function handle()
     {
-        $arg = $this->argument('action');
-
-        switch ($arg) {
-            case 'start':
-                $this->start();
-                break;
-            case 'reload':
-                $this->reload();
-                break;
-            case 'stop':
-                $this->stop();
-                break;
-            case 'status':
-                $this->status();
-                break;
-            case 'pid':
-                $this->pid();
-                break;
-            default:
-                break;
+        $action = $this->argument('action');
+        if (method_exists($this, $action)) {
+            $this->{$action}();
+        } else {
+            $this->error("$action action not exists");
         }
     }
 

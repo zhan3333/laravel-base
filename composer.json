@@ -48,7 +48,10 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Tests\\": [
+                "tests/",
+                "packages/zhan3333/swoole/tests/"
+            ]
         }
     },
     "minimum-stability": "dev",
