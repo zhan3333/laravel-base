@@ -13,13 +13,14 @@ return [
             'timeout' => 1,
             'retry' => 1,
             'worker_num' => 1, // 一般设置为服务器CPU数的1-4倍
-            'daemonize' => false,  // 以守护进程执行
+            'daemonize' => true,  // 以守护进程执行
             'max_request' => 10000,
             'dispatch_mode' => 2,
             'task_worker_num' => 1,
             'task_ipc_mode' => 3, // 使用消息队列，争抢模式
-            'log_file' => storage_path('logs/default-swoole.log'),
-            'pid_file' => storage_path('pid/default-swoole.pid'),
+//            'log_file' => storage_path('logs/default-swoole.log'),
+//            'pid_file' => storage_path('pid/default-swoole.pid'),
+            'pid_file' => '/work/github/laravel-base/storage/pid/default-swoole.pid',
         ],
     ],
     'job' => [

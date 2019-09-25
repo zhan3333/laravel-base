@@ -7,9 +7,7 @@
 
 namespace Zhan3333\Swoole\Http;
 
-use Illuminate\Foundation\Http\Kernel as HttpKernel;
-
-class Kernel extends HttpKernel
+class Kernel extends SwooleKernel
 {
     /**
      * The application's global HTTP middleware stack.
@@ -18,7 +16,7 @@ class Kernel extends HttpKernel
      *
      * @var array
      */
-    protected $middleware = [
+    public $middleware = [
         \App\Http\Middleware\CheckForMaintenanceMode::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,

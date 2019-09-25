@@ -39,7 +39,7 @@ class SwooleManager
         $pid = null;
         // try get pid from pid_file
         if (file_exists($this->config['pid_file'])) {
-            $pid = file_get_contents($this->config['pid_file']);
+            $pid = @file_get_contents($this->config['pid_file']);
         }
         // try get pid from pidof
         if (!$pid) {

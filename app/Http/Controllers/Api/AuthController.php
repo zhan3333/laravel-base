@@ -6,7 +6,7 @@
  * Time: 0:59
  */
 
-namespace App\Http\Controllers\Api\User;
+namespace App\Http\Controllers\Api;
 
 
 use App\Http\Controllers\Controller;
@@ -31,8 +31,7 @@ class AuthController extends Controller
     public function login()
     {
         $credentials = request(['email', 'password']);
-
-        if (! $token = auth()->attempt($credentials)) {
+        if (!$token = auth()->attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -46,6 +45,8 @@ class AuthController extends Controller
      */
     public function me()
     {
+        $token = request()->header('Authorization');
+        \Log::debug('user', [\Auth::id(), substr($token, strlen($token) - 5, 4)]);
         return response()->json(auth()->user());
     }
 
@@ -74,7 +75,7 @@ class AuthController extends Controller
     /**
      * Get the token array structure.
      *
-     * @param  string $token
+     * @param string $token
      *
      * @return \Illuminate\Http\JsonResponse
      */

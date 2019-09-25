@@ -7,6 +7,8 @@ namespace Zhan3333\Swoole;
 use Exception;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Pipeline;
+use Illuminate\Support\Facades\Facade;
+use Psr\Log\LoggerInterface;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
@@ -127,24 +129,55 @@ class Swoole
     public function onRequest(Request $request, Response $response)
     {
         $transformRequest = TransformRequest::handle($request);
-        /** @var Kernel $kernel */
-        $kernel = app(\Illuminate\Contracts\Http\Kernel::class);
+        $transformResponse = $this->sandbox($transformRequest);
+        TransformResponse::handle($transformResponse, $response);
+        $response->end('test');
+//        $response->end($transformResponse->content());
+    }
+
+    private function sandbox(\Illuminate\Http\Request $request): \Illuminate\Http\Response
+    {
         /** @var Application $app */
-        $app = app();
+        $app = new \Illuminate\Foundation\Application(
+            $_ENV['APP_BASE_PATH'] ?? $this->config['base_path']
+        );
+
+        $app->singleton(
+            \Illuminate\Contracts\Http\Kernel::class,
+            \Zhan3333\Swoole\Http\Kernel::class
+        );
+
+        $app->singleton(
+            \Illuminate\Contracts\Console\Kernel::class,
+            \App\Console\Kernel::class
+        );
+
+        $app->singleton(
+            \Illuminate\Contracts\Debug\ExceptionHandler::class,
+            \App\Exceptions\Handler::class
+        );
+
+        $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
+        $app->instance('request', $request);
+        $kernel->bootstrap();
+
+        Facade::clearResolvedInstance('request');
+
         try {
-            $transformResponse = (new Pipeline($app))
-                ->send($transformRequest)
-                ->through($app->shouldSkipMiddleware() ? [] : $kernel->getMiddleware())
+            $response = (new Pipeline($app))
+                ->send($request)
+                ->through($app->shouldSkipMiddleware() ? [] : $kernel->middleware)
                 ->then($kernel->dispatchToRouter());
         } catch (Exception $e) {
-            app(\App\Exceptions\Handler::class)->report($e);
-            $transformResponse = app(\App\Exceptions\Handler::class)->render($transformRequest, $e);
+            $app[\App\Exceptions\Handler::class]->report($e);
+            $response = $app[\App\Exceptions\Handler::class]->render($request, $e);
         } catch (Throwable $e) {
-            app(\App\Exceptions\Handler::class)->report($e = new FatalThrowableError($e));
-            $transformResponse = app(\App\Exceptions\Handler::class)->render($transformRequest, $e);
+            $app[\App\Exceptions\Handler::class]->report($e = new FatalThrowableError($e));
+            $response = $app[\App\Exceptions\Handler::class]->render($request, $e);
         }
-        TransformResponse::handle($transformResponse, $response);
-        $response->end($transformResponse->content());
+        $app->flush();
+        unset($app, $kernel);
+        return $response;
     }
 
     private function log($message, $data = [])
@@ -153,7 +186,7 @@ class Swoole
             $data = [$data];
         }
         if ($this->config['log_enable']) {
-            app(SwooleLogger::class)->info("{$this->config['name']}: $message", $data);
+//            app(SwooleLogger::class)->info("{$this->config['name']}: $message", $data);
         }
     }
 }

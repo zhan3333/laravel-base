@@ -67,6 +67,17 @@ class HttpSwooleCommand extends Command
         }
     }
 
+    public function stop()
+    {
+        $this->manager->stop();
+        while (1) {
+            if (!$this->manager->isRun()) {
+                $this->info('Stop success');
+                break;
+            }
+        }
+    }
+
     public function reload()
     {
         if ($this->manager->isRun()) {
@@ -83,10 +94,18 @@ class HttpSwooleCommand extends Command
         if ($this->manager->isRun()) {
             $this->info('Server is running, restart ...');
             $this->manager->stop();
-            $this->info('Restart success');
+            $this->info('Stop success');
             $this->info('Start ...');
-            sleep(3);
+            while (1) {
+                if (!$this->manager->isRun()) {
+                    $this->start();
+                    $this->info('Start success');
+                    break;
+                }
+            }
+        } else {
+            $this->start();
+            $this->info('Start success');
         }
-        $this->start();
     }
 }

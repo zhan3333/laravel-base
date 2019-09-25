@@ -19,3 +19,4 @@ fast create laravel app
 - Generate api doc: `mpociot/laravel-apidoc-generator`
 - Database data to seed: `orangehill/iseed`
 - World data: `rinvex/country`
+- Http Request: `guzzlehttp/guzzle`
