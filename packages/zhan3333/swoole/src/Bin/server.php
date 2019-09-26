@@ -18,32 +18,6 @@ if (!file_exists($basePath . '/vendor/autoload.php')) {
 
 require $basePath . '/vendor/autoload.php';
 
-//$app = new Illuminate\Foundation\Application(
-//    $_ENV['APP_BASE_PATH'] ?? $basePath
-//);
-//
-//$app->singleton(
-//    Illuminate\Contracts\Http\Kernel::class,
-//    \Zhan3333\Swoole\Http\Kernel::class
-//);
-//
-//$app->singleton(
-//    Illuminate\Contracts\Console\Kernel::class,
-//    App\Console\Kernel::class
-//);
-//
-//$app->singleton(
-//    Illuminate\Contracts\Debug\ExceptionHandler::class,
-//    App\Exceptions\Handler::class
-//);
-//
-//$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
-//$app->instance('request', \Illuminate\Http\Request::capture());
-//$kernel->bootstrap();
+$app = \Zhan3333\Swoole\Http\Boot::boot($basePath);
 
-//$app->make(\Zhan3333\Swoole\SwooleManager::class)->start();
-
-$config = require $basePath . '/config/swoole.php';
-$config['base_path'] = $basePath;
-$manager = new \Zhan3333\Swoole\Swoole($config['services'][$config['use_server']]);
-$manager->start();
+$app->make(\Zhan3333\Swoole\SwooleManager::class)->start();

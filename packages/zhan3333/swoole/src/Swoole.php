@@ -15,6 +15,7 @@ use Swoole\Server;
 use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Throwable;
 use Zhan3333\Swoole\Exceptions\JobRuntimeException;
+use Zhan3333\Swoole\Http\Boot;
 use Zhan3333\Swoole\Http\Kernel;
 use Zhan3333\Swoole\Http\TransformRequest;
 use Zhan3333\Swoole\Http\TransformResponse;
@@ -128,38 +129,50 @@ class Swoole
 
     public function onRequest(Request $request, Response $response)
     {
-        $transformRequest = TransformRequest::handle($request);
-        $transformResponse = $this->sandbox($transformRequest);
-        TransformResponse::handle($transformResponse, $response);
-        $response->end('test');
-//        $response->end($transformResponse->content());
+        try {
+            $transformRequest = TransformRequest::handle($request);
+            /** @var Application $app */
+            $app = Boot::boot(Boot::$mainApp->basePath());
+
+            $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
+
+            $app->instance('request', $transformRequest);
+
+            Facade::clearResolvedInstance('request');
+
+            /** @var \Illuminate\Http\Response $transformResponse */
+            $transformResponse = (new Pipeline($app))
+                ->send($transformRequest)
+                ->through($app->shouldSkipMiddleware() ? [] : $kernel->middleware)
+                ->then($kernel->dispatchToRouter());
+        } catch (Exception $e) {
+            $app[\App\Exceptions\Handler::class]->report($e);
+            $transformResponse = $app[\App\Exceptions\Handler::class]->render($request, $e);
+        } catch (Throwable $e) {
+            $app[\App\Exceptions\Handler::class]->report($e = new FatalThrowableError($e));
+            $transformResponse = $app[\App\Exceptions\Handler::class]->render($request, $e);
+        }
+        foreach ($transformResponse->headers as $key => $value) {
+            if (is_array($value)) {
+                $value = implode(',', $value);
+            }
+            $response->header($key, $value);
+        }
+        $response->status($transformResponse->getStatusCode());
+        $response->end($transformResponse->content());
     }
 
-    private function sandbox(\Illuminate\Http\Request $request): \Illuminate\Http\Response
+    private function refreshApplication()
+    {
+
+    }
+
+    public function sandbox(\Illuminate\Http\Request $request): \Illuminate\Http\Response
     {
         /** @var Application $app */
-        $app = new \Illuminate\Foundation\Application(
-            $_ENV['APP_BASE_PATH'] ?? $this->config['base_path']
-        );
-
-        $app->singleton(
-            \Illuminate\Contracts\Http\Kernel::class,
-            \Zhan3333\Swoole\Http\Kernel::class
-        );
-
-        $app->singleton(
-            \Illuminate\Contracts\Console\Kernel::class,
-            \App\Console\Kernel::class
-        );
-
-        $app->singleton(
-            \Illuminate\Contracts\Debug\ExceptionHandler::class,
-            \App\Exceptions\Handler::class
-        );
-
+        $app = app();
         $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
         $app->instance('request', $request);
-        $kernel->bootstrap();
 
         Facade::clearResolvedInstance('request');
 
@@ -175,8 +188,6 @@ class Swoole
             $app[\App\Exceptions\Handler::class]->report($e = new FatalThrowableError($e));
             $response = $app[\App\Exceptions\Handler::class]->render($request, $e);
         }
-        $app->flush();
-        unset($app, $kernel);
         return $response;
     }
 

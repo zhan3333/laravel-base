@@ -10,13 +10,20 @@ namespace Tests\Unit;
 
 use App\Models\User;
 use GuzzleHttp\Client;
+use Illuminate\Foundation\Testing\TestResponse;
+use Illuminate\Http\Response;
+use Psr\Http\Message\ResponseInterface;
 use Tests\TestCase;
 
 class HttpTest extends TestCase
 {
     private $url;
+    private $port;
+    private $host;
     private $email = 'test@test.com';
     private $password = '000000';
+    /** @var Client */
+    private $client;
 
     public function setUp(): void
     {
@@ -24,17 +31,18 @@ class HttpTest extends TestCase
         $this->defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
         $this->defaultHeaders['Accept'] = 'application/json';
         $driver = config('swoole.use_server');
-        $this->url = 'http://' . config("swoole.services.$driver.host") . ':' . config("swoole.services.$driver.port");
+        $this->host = config("swoole.services.$driver.host");
+        $this->port = config("swoole.services.$driver.port");
         \Route::any('_test', function () {
-            return \Route::getCurrentRoute()->uri;
             return 'OK';
         });
         \Artisan::call('http-swoole', [
             'action' => 'restart'
         ]);
         $this->client = new Client([
-            'base_uri' => $this->url,
-            'http_errors' => false,
+            'base_uri' => 'http://127.0.0.1:' . $this->port,
+            'http_errors' => true,
+            'debug' => false,
         ]);
         if (!User::where('email', $this->email)->exists()) {
             User::create([
@@ -48,11 +56,22 @@ class HttpTest extends TestCase
     }
 
     /**
+     * 转换
+     * @param ResponseInterface $response
+     * @return TestResponse
+     */
+    public function conversionTestResponse(ResponseInterface $response): TestResponse
+    {
+        $response = Response::create($response->getBody(), $response->getStatusCode(), $response->getHeaders());
+        return TestResponse::fromBaseResponse($response);
+    }
+
+    /**
      * @test
      */
     public function baseTest()
     {
-        $response = $this->get($this->url . '/');
+        $response = $this->client->get($this->url . '/');
         $response->assertStatus(200);
     }
 
@@ -61,7 +80,7 @@ class HttpTest extends TestCase
      */
     public function contentTest()
     {
-        $response = $this->get($this->url . '/test');
+        $response = $this->client->get('/test');
         $response->assertStatus(200);
         $this->assertEquals('test', $response->getContent());
     }
@@ -81,16 +100,20 @@ class HttpTest extends TestCase
      */
     public function testLogin()
     {
-        $response = $this->post($this->url . '/api/auth/login', [
-            'email' => $this->email,
-            'password' => $this->password,
+        $response = $this->client->post('/api/auth/login', [
+            'form_params' => [
+                'email' => $this->email,
+                'password' => $this->password,
+            ],
+            'headers' => $this->defaultHeaders,
         ]);
-        $response->assertStatus(200);
-        $response->assertJsonStructure([
-            'access_token',
-            'token_type',
-            'expires_in',
-        ]);
+        $response = $this->conversionTestResponse($response);
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'access_token',
+                'token_type',
+                'expires_in',
+            ]);
         return $response;
     }
 
@@ -99,11 +122,12 @@ class HttpTest extends TestCase
      */
     public function testMe()
     {
-        $response = $this->post($this->url . '/api/auth/me');
-        $response->assertStatus(200);
-        $response->assertJson([
-            'email' => $this->email,
-        ]);
+        $response = $this->client->post($this->url . '/api/auth/me');
+        $this->conversionTestResponse($response)
+            ->assertStatus(200)
+            ->assertJson([
+                'email' => $this->email,
+            ]);
     }
 
     /**
@@ -112,7 +136,7 @@ class HttpTest extends TestCase
     public function loginOtherUser()
     {
         // get old user
-        $this->post($this->url . '/api/auth/me')
+        $this->conversionTestResponse($this->client->post($this->url . '/api/auth/me', ['headers' => $this->defaultHeaders]))
             ->assertStatus(200)
             ->assertJson([
                 'email' => $this->email,
@@ -127,24 +151,28 @@ class HttpTest extends TestCase
                 'password' => bcrypt('000000'),
             ]);
         }
-        $response = $this
-            ->post($this->url . '/api/auth/login', [
-                'email' => $email,
-                'password' => '000000',
-            ])
+        $response = $this->conversionTestResponse($this->client->post('/api/auth/login', [
+            'form_params' => [
+                'email' => $email, 'password' => '000000'
+            ],
+        ]))
             ->assertStatus(200)
             ->assertJsonStructure([
                 'access_token'
             ]);
-        $this->post($this->url . '/api/auth/me', [], ['Authorization' => $response->json('token_type') . ' ' . $response->json('access_token')])
+        $this->conversionTestResponse(
+            $this->client->post('/api/auth/me', [
+                'headers' => ['Authorization' => $response->json('token_type') . ' ' . $response->json('access_token')]
+            ])
+        )
             ->assertStatus(200)
             ->assertJson([
                 'email' => $email,
             ]);
-
-        dump(\Auth::id());
         // get old user
-        $this->post($this->url . '/api/auth/me', [], $this->defaultHeaders)
+        $this->conversionTestResponse($this->client->post($this->url . '/api/auth/me', [
+            'headers' => $this->defaultHeaders
+        ]))
             ->assertStatus(200)
             ->assertJson([
                 'email' => $this->email,
