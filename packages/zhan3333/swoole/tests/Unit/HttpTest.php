@@ -9,15 +9,17 @@ namespace Tests\Unit;
 
 
 use App\Models\User;
+use Artisan;
+use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Foundation\Testing\TestResponse;
 use Illuminate\Http\Response;
 use Psr\Http\Message\ResponseInterface;
+use Route;
 use Tests\TestCase;
 
 class HttpTest extends TestCase
 {
-    private $url;
     private $port;
     private $host;
     private $email = 'test@test.com';
@@ -28,21 +30,15 @@ class HttpTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
-        $this->defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
-        $this->defaultHeaders['Accept'] = 'application/json';
+
         $driver = config('swoole.use_server');
         $this->host = config("swoole.services.$driver.host");
         $this->port = config("swoole.services.$driver.port");
-        \Route::any('_test', function () {
+        Route::any('_test', static function () {
             return 'OK';
         });
-        \Artisan::call('http-swoole', [
+        Artisan::call('http-swoole', [
             'action' => 'restart'
-        ]);
-        $this->client = new Client([
-            'base_uri' => 'http://127.0.0.1:' . $this->port,
-            'http_errors' => true,
-            'debug' => false,
         ]);
         if (!User::where('email', $this->email)->exists()) {
             User::create([
@@ -51,8 +47,27 @@ class HttpTest extends TestCase
                 'email' => $this->email,
             ]);
         }
-        $response = $this->testLogin();
+
+
+        $this->client = new Client([
+            'base_uri' => 'http://127.0.0.1:' . $this->port,
+            'http_errors' => true,
+            'debug' => false,
+            'headers' => [
+                'X-Requested-With' => 'XMLHttpRequest',
+                'Accept' => 'application/json',
+            ],
+        ]);
+
+        try {
+            $response = $this->testLogin();
+        } catch (Exception $e) {
+            $this->fail($e);
+        }
+        $this->defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
+        $this->defaultHeaders['Accept'] = 'application/json';
         $this->defaultHeaders['Authorization'] = $response->json('token_type') . ' ' . $response->json('access_token');
+
     }
 
     /**
@@ -71,7 +86,7 @@ class HttpTest extends TestCase
      */
     public function baseTest()
     {
-        $response = $this->client->get($this->url . '/');
+        $response = $this->conversionTestResponse($this->client->get('/'));
         $response->assertStatus(200);
     }
 
@@ -80,23 +95,14 @@ class HttpTest extends TestCase
      */
     public function contentTest()
     {
-        $response = $this->client->get('/test');
+        $response = $this->conversionTestResponse($this->client->get('/test'));
         $response->assertStatus(200);
         $this->assertEquals('test', $response->getContent());
     }
 
     /**
      * @test
-     */
-    public function testAppendRoute()
-    {
-        $response = $this->get($this->url . '/_test');
-        $response->assertStatus(200);
-    }
-
-    /**
-     * @test
-     * @throws \Exception
+     * @throws Exception
      */
     public function testLogin()
     {
@@ -122,7 +128,9 @@ class HttpTest extends TestCase
      */
     public function testMe()
     {
-        $response = $this->client->post($this->url . '/api/auth/me');
+        $response = $this->client->post('/api/auth/me', [
+            'headers' => $this->defaultHeaders
+        ]);
         $this->conversionTestResponse($response)
             ->assertStatus(200)
             ->assertJson([
@@ -136,7 +144,7 @@ class HttpTest extends TestCase
     public function loginOtherUser()
     {
         // get old user
-        $this->conversionTestResponse($this->client->post($this->url . '/api/auth/me', ['headers' => $this->defaultHeaders]))
+        $this->conversionTestResponse($this->client->post('/api/auth/me', ['headers' => $this->defaultHeaders]))
             ->assertStatus(200)
             ->assertJson([
                 'email' => $this->email,
@@ -170,7 +178,7 @@ class HttpTest extends TestCase
                 'email' => $email,
             ]);
         // get old user
-        $this->conversionTestResponse($this->client->post($this->url . '/api/auth/me', [
+        $this->conversionTestResponse($this->client->post('/api/auth/me', [
             'headers' => $this->defaultHeaders
         ]))
             ->assertStatus(200)

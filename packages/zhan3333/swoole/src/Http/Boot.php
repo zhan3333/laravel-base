@@ -8,7 +8,10 @@
 namespace Zhan3333\Swoole\Http;
 
 
+use App\Exceptions\Handler;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 
 class Boot
 {
@@ -19,17 +22,15 @@ class Boot
     {
         if (empty($basePath) && self::$mainApp) {
             $basePath = self::$mainApp->basePath();
-        } else {
-            throw new \Exception('Base path must set');
         }
 
-        $app = new \Illuminate\Foundation\Application(
+        $app = new Application(
             $_ENV['APP_BASE_PATH'] ?? $basePath
         );
 
         $app->singleton(
             \Illuminate\Contracts\Http\Kernel::class,
-            \Zhan3333\Swoole\Http\Kernel::class
+            Kernel::class
         );
 
         $app->singleton(
@@ -38,12 +39,12 @@ class Boot
         );
 
         $app->singleton(
-            \Illuminate\Contracts\Debug\ExceptionHandler::class,
-            \App\Exceptions\Handler::class
+            ExceptionHandler::class,
+            Handler::class
         );
 
         $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
-        $app->instance('request', \Illuminate\Http\Request::capture());
+        $app->instance('request', Request::capture());
         $kernel->bootstrap();
 
         if (!self::$mainApp) {
