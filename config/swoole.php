@@ -18,9 +18,8 @@ return [
             'dispatch_mode' => 2,
             'task_worker_num' => 1,
             'task_ipc_mode' => 3, // 使用消息队列，争抢模式
-//            'log_file' => storage_path('logs/default-swoole.log'),
-//            'pid_file' => storage_path('pid/default-swoole.pid'),
-            'pid_file' => '/work/github/laravel-base/storage/pid/default-swoole.pid',
+            'log_file' => storage_path('logs/default-swoole.log'),
+            'pid_file' => storage_path('pid/default-swoole.pid'),
         ],
     ],
     'job' => [

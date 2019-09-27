@@ -62,12 +62,6 @@ class SwooleManager
         Process::kill($this->getPid(), SIGUSR1);
     }
 
-    public function start()
-    {
-        $swoole = new $this->config['handle_class']($this->config);
-        $swoole->start();
-    }
-
     public function checkConfig()
     {
         if (empty($this->config)) {

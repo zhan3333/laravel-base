@@ -8,7 +8,6 @@ use Exception;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Pipeline;
 use Illuminate\Support\Facades\Facade;
-use Psr\Log\LoggerInterface;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
@@ -16,9 +15,7 @@ use Symfony\Component\Debug\Exception\FatalThrowableError;
 use Throwable;
 use Zhan3333\Swoole\Exceptions\JobRuntimeException;
 use Zhan3333\Swoole\Http\Boot;
-use Zhan3333\Swoole\Http\Kernel;
 use Zhan3333\Swoole\Http\TransformRequest;
-use Zhan3333\Swoole\Http\TransformResponse;
 use Zhan3333\Swoole\Job\Inject;
 
 class Swoole

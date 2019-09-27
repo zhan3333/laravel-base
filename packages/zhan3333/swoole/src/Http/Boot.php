@@ -13,16 +13,20 @@ use Illuminate\Foundation\Application;
 class Boot
 {
     /** @var Application */
-    public static $mainApp;
+    public $mainApp;
 
-    public static function boot($basePath = '')
+    public function __construct()
     {
-        if (empty($basePath) && self::$mainApp) {
-            $basePath = self::$mainApp->basePath();
-        } else {
-            throw new \Exception('Base path must set');
-        }
+        $this->mainApp = $this->bootstrap(APP_ROOT);
+    }
 
+    public function copy()
+    {
+        return $this->bootstrap($this->mainApp->basePath());
+    }
+
+    private function bootstrap($basePath)
+    {
         $app = new \Illuminate\Foundation\Application(
             $_ENV['APP_BASE_PATH'] ?? $basePath
         );
@@ -45,11 +49,6 @@ class Boot
         $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
         $app->instance('request', \Illuminate\Http\Request::capture());
         $kernel->bootstrap();
-
-        if (!self::$mainApp) {
-            self::$mainApp = $app;
-        }
-
         return $app;
     }
 }
